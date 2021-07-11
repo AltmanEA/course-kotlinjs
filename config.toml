@@ -1,0 +1,19 @@
+baseURL = "https://altmanea.ru/kotlinjs/"
+languageCode = "ru"
+title = "Web-приложения на языке Kotlin"
+theme = "hugo-theme-techdoc"
+
+[params]
+    custom_font_color = "white"
+    custom_background_color = "blue"
+
+    lecUrl = "https://altmanea.ru/kotlinjs/slides/"
+
+    menu_style = "slide-menu"
+    menu_exclusion = ["home", "archives", "blog", "entry", "post", "posts"]
+
+[markup]
+  [markup.highlight]
+    style = "github"
+  [markup.goldmark.renderer]
+      unsafe = true
