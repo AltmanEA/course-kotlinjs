@@ -1,0 +1,286 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Структура kotlinx.html
+
+--
+
+### Зависимости
+
+```build.gradle.kts```:
+```Kotlin
+dependencies {
+    testImplementation(kotlin("test"))
+    implementation("org.jetbrains.kotlinx:kotlinx-html:0.7.2")
+}
+```
+```client.kt```:
+```Kotlin
+import kotlinx.html.dom.append
+import org.w3c.dom.Node
+import kotlinx.browser.document
+import kotlinx.browser.window
+import kotlin.js.Date
+```
+
+--
+
+### Node
+
+```Kotlin
+public external abstract class Node : EventTarget {
+    open val nodeType: Short
+    open val nodeName: String
+    open val baseURI: String
+    open val isConnected: Boolean
+    open val ownerDocument: Document?
+    open val parentNode: Node?
+    open val parentElement: Element?
+    open val childNodes: NodeList
+    open val firstChild: Node?
+    open val lastChild: Node?
+    open val previousSibling: Node?
+    open val nextSibling: Node?
+    open var nodeValue: String?
+    open var textContent: String?
+```
+
+--
+
+### Append
+
+```Kotlin
+fun Node.append(
+	block: TagConsumer<HTMLElement>.() -> Unit
+): List<HTMLElement> =
+    ArrayList<HTMLElement>().let { result ->
+        ownerDocumentExt.createTree().onFinalize { it, partial ->
+            if (!partial) {
+                result.add(it); appendChild(it)
+            }
+        }.block()
+
+        result
+    }
+```
+
+--
+
+### Div (fun)
+
+```Kotlin
+inline fun <T, C : TagConsumer<T>> C.div(
+	classes : String? = null, crossinline block : DIV.() -> Unit = {}
+) : T = DIV(attributesMapOf("class", classes), this)
+		.visitAndFinalize(this, block)
+```
+
+--
+
+### DIV (class)
+
+```Kotlin
+open class DIV(
+	initialAttributes : Map<String, String>, 
+	override val consumer : TagConsumer<*>
+) : HTMLTag(
+	"div", consumer, initialAttributes, 
+	null, false, false
+), HtmlBlockTag {}
+```
+
+--
+
+### HTMLTag
+
+```Kotlin
+open class HTMLTag(
+        override val tagName : String,
+        override val consumer : TagConsumer<*>,
+        initialAttributes : Map<String, String>,
+        override val namespace : String? = null,
+        override val inlineTag: Boolean,
+        override val emptyTag: Boolean) : Tag {
+
+    override val attributes : DelegatingMap = 
+		DelegatingMap(initialAttributes, this) { consumer }
+
+    override val attributesEntries
+		: Collection<Map.Entry<String, String>>
+        get() = attributes.immutableEntries
+}
+```
+
+--
+
+### TagConsumer
+
+```Kotlin
+interface TagConsumer<out R> {
+    fun onTagStart(tag: Tag)
+    fun onTagAttributeChange(
+		tag: Tag, attribute: String, value: String?
+	)
+    fun onTagEvent(tag: Tag, event: String, value: (Event) -> Unit)
+    fun onTagEnd(tag: Tag)
+    fun onTagContent(content: CharSequence)
+    fun onTagContentEntity(entity: Entities)
+    fun onTagContentUnsafe(block: Unsafe.() -> Unit)
+    fun onTagComment(content: CharSequence)
+    fun onTagError(tag: Tag, exception: Throwable): Unit = 
+		throw exception
+    fun finalize(): R
+}
+```
+
+---
+
+# Пример
+
+--
+
+### Данные
+
+```Kotlin
+data class Student (
+    val firstname: String,
+    val surname: String
+)
+
+val studentList =
+    arrayListOf(
+        Student("Sheldon", "Cooper"),
+        Student("Leonard", "Hofstadter"),
+        Student("Howard", "Wolowitz")
+    )
+```
+
+--
+
+### Формируем теги
+
+```Kotlin
+?.append {
+    h1 {
+        +"Students"
+    }
+    ol {
+        studentList.map {
+            li {
+                +"${it.firstname} ${it.surname}"
+            }
+        }
+    }
+}
+```
+
+--
+
+### Атрибуты и классы
+
+```Kotlin
+ol {
+    attributes += "id" to "listStudents"
+    studentList.map {
+        li ("student") {
+            +"${it.firstname} ${it.surname}"
+        }
+    }
+}
+```
+
+---
+
+# Обработка кликов
+
+--
+
+## OnClick
+
+![](images/onCLickFunction.jpg)
+
+--
+
+## Определяем элементы
+
+```Kotlin
+var ascending = true
+private fun HTMLTag.sortStudents(): (Event) -> Unit =
+    {
+        val listStudents: Element = 
+            document.getElementById("listStudents")!!
+        listStudents.clear()
+```
+
+--
+
+## Перерисовываем
+
+```Kotlin
+listStudents.append {
+    if (ascending)
+        studentList.sortBy { it.firstname }
+    else
+        studentList.sortByDescending { it.firstname }
+    ascending = !ascending
+    attributes += "id" to "listStudents"
+    studentList.map {
+        li {
+            +"${it.firstname} ${it.surname}"
+        }
+    }
+}
+```
+
+--
+
+### Проблемы
+
+- Учет элементов.
+- Перерисовка элементов.
+- Повторное использование.
+- Состояние приложения.
+
+
+
+                    </script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>

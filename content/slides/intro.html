@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Введение в курс</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+## Прикладное программирование
+
+--
+
+### Объем
+
+- 5 семестр: лекции, лабораторные раз в неделю, самостоятельная, экзамен.
+- 6 семестр: лекции, лабораторные раз в неделю, самостоятельная, курсовая, экзамен.
+
+--
+
+### Содержание 5 семестра
+
+WEB-приложения:
+
+- браузер и элементы HTML;
+- react и компоненты;
+- redux и состояния;
+- асинхронные операции и взаимодействие с сервером.
+
+--
+
+### Содержание 6 семестра
+
+Многопользовательские приложения:
+
+- архитектура REST;
+- аутентификация и авторизация;
+- транзакции и блокировка;
+- и другое.
+
+---
+
+# Как сдать
+
+--
+
+### Конспект
+
+- На каждой странице – ФИО и группа, перед каждой записью – дата.
+- Комментарии к каждому слайду (слайды можно распечатать).
+- Пояснения к вопросам на изучение на практике.
+- Конспект предъявляется при защите работ и на экзамене.
+
+--
+
+### Лабораторные
+
+- Сделать, показать, рассказать как работает.
+- Позже срока – нужно показать отчет в бумажном виде.
+- Каждая невыполненая работа – дополнительный вопрос на экзамене, дополнительных занятий не будет!
+
+--
+
+### Самостоятельную
+
+- Для желающих получить автомат.
+- Тема – разобраться с библиотекой для react.
+
+--
+
+### Экзамен
+
+- По итогам работы в семестре – при сдаче всех лабораторных и самостоятельной работы (оценка на усмотрение преподавателя).
+- Во время сессии – ответить на вопросы в билете плюс доп. вопросы по лабораторным.
+                    </script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>

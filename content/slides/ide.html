@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Среда разработки</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Создание проекта
+
+--
+
+### Тип проекта
+
+![](images/new-project.jpg)
+
+--
+
+### Настройка проекта
+
+![](images/new-project-props.jpg)
+
+--
+
+### Настройка gradle
+
+<img src="images/gradle-tune.jpg" width="70%" />
+
+--
+
+### Индексация проекта
+
+![](images/index-tune.jpg)
+
+--
+
+### Структура проекта
+
+![](images/project-structure.jpg)
+
+---
+
+# Запуск проекта
+
+--
+
+### Конфигурации запуска
+
+
+![](images/project-run.jpg)
+
+--
+
+### Задачи gradle
+
+
+![](images/gradle-task.jpg)
+
+--
+
+### WebPack dev server
+
+![](images/webpack-dev-server.jpg)
+
+--
+
+### Приложение в браузере
+
+![](images/app-run.jpg)
+
+---
+
+# Отладка
+
+--
+
+### Способы отладки
+
+- В IDE (работает только в версии Ultimate).
+- В отладчике браузера (работает с версией плагина 1.5.21).
+
+--
+
+### Отладчик в браузере
+
+Вызывается F12 или через меню.
+
+<img src="images/browser-debuger.jpg" width="80%" />
+
+--
+
+### Исходный код
+
+![](images/debugger-source.jpg)
+
+--
+
+### Отладчик
+
+![](images/debugger-scope.jpg)
+
+--
+
+### Контекст в JS
+
+![](images/debugger-scope.jpg)
+
+---
+
+# Программа для HTML
+
+--
+
+### Платфорозависимая дата
+
+```Kotlin
+import kotlin.js.Date
+
+fun Node.sayHello() {
+    val date = Date(Date.now())
+    append {
+        div {
+            +date.toDateString()
+        }
+    }
+}
+```
+
+--
+
+### Просмотр в отладчике
+
+![](images/debugger-val.jpg)
+
+--
+
+## Упростим проект
+
+```index.html```:
+
+```Html
+	< div id="root"></ div>
+	< script src="browser.js"></ script>
+```
+
+```main.kt```:
+
+```Kotlin
+fun main() {
+    val date = Date(Date.now())
+    document.getElementById("root")
+        ?.append {
+            div {
+                +date.toDateString()
+            }}}
+```
+
+--
+
+## Стили
+
+```index.html```:
+
+```Html
+	<link rel="stylesheet" href="my.css">
+```
+
+```recources/my.css```:
+```css
+.div{
+    color: blue
+}
+```
+
+                    </script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
