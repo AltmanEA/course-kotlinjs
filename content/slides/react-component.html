@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Компоненты React</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Компоненты React
+
+--
+
+### Модули
+
+```build.gradle.kts```:
+```Kotlin
+implementation("org.jetbrains.kotlin-wrappers:
+	kotlin-react:17.0.2-pre.229-kotlin-1.5.21")
+	kotlin-react-dom:17.0.2-pre.229-kotlin-1.5.21")
+	kotlin-styled:5.3.0-pre.229-kotlin-1.5.21")
+	kotlin-react-router-dom:5.2.0-pre.229-kotlin-1.5.21")
+	kotlin-redux:4.1.0-pre.229-kotlin-1.5.21")
+	kotlin-react-redux:7.2.4-pre.229-kotlin-1.5.21")
+```
+
+--
+
+### Компонент React
+
+это элемент программы (функция или объект) который создает элемент интерфейса (HTML элемент) на основе заданных свойств и (или) состояния.
+
+--
+
+### Свойства компонента
+
+```Kotlin
+external interface StudentProps : Props {
+    var student: Student
+}
+```
+
+--
+
+### Функциональный компонент
+
+```Kotlin
+val CStudent = fc { props: StudentProps ->
+    div("student") {
+        props.student.let {
+            +"${it.firstname} ${it.surname}"
+        }
+    }
+}
+```
+
+--
+
+### Builder
+
+```Kotlin
+fun RBuilder.student(student:Student) = child(CStudent) {
+    attrs.student = student
+}
+```
+
+
+--
+
+### Используем компоненты
+
+```Kotlin
+fun main() {
+    render(document.getElementById("root")) {
+        h1 {
+            +"List of student"
+        }
+        ol {
+            studentList.map {
+                li { student(it) }
+            }
+        }
+    }
+}
+```
+
+---
+
+# Инстанци-рование компонентов
+
+--
+
+### React DevTools
+
+![](images/react-devtools.jpg)
+
+--
+
+### Log component
+
+![](images/react-devtools-log.jpg)
+
+
+--
+
+### React элементы
+
+#### ООП:
+
+Класс – конструктор – объект.
+
+#### React:
+
+Компонент – функция или класс для создания instance.
+
+Элемент – описание для создания компонента (дерева компонентов): компонент и свойства.
+
+Instance – экземпляр компонента в Virtual DOM.
+
+--
+
+### Создание instance
+
+```Kotlin
+render(document.getElementById("root")) {
+	h1 { +"List of student" }
+    ol { studentList.map {
+        li { student(it) }
+    }}
+}
+```
+
+```h1, ol, li``` – react element, 
+
+```student(it)``` – react element с компонентом
+
+```render``` – создает по элементам instance 
+
+--
+
+### Оптимизация
+
+- render создает структуру данных Virtual DOM;
+- пересчитываются элементы, у которых изменились свойства;
+- пересчет проиходит асинхронно. 
+
+--
+
+### Отображение Virtual DOM
+
+- отображение может быть в HTML или в Native;
+- отображаются все изменения сразу.
+
+---
+
+# Состояние компонентов
+
+--
+
+### Описание состояния
+
+```Kotlin
+external interface StudentState : State {
+    var marked: Boolean
+}
+```
+
+--
+
+### Компонент-класс
+
+```Kotlin
+class CStudent : RComponent< StudentProps, StudentState>(){
+    init {
+        state.apply {
+            marked = false
+        }
+    }
+    override fun RBuilder.render() { ... }
+}
+```
+
+--
+
+### Функция render
+
+```Kotlin
+override fun RBuilder.render() {
+	div(
+		if (state.marked) "marked" else "unmarked"
+	) {
+		+"${props.student.firstname} ${props.student.surname}"
+		attrs.onClickFunction = {
+			setState{
+				marked = !marked
+			}
+		}
+	}
+}
+```
+                    </script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
