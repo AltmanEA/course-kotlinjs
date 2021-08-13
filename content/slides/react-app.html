@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Приложение React</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Приложение
+
+--
+
+### Задача
+
+В конце списка вывести число отмеченных студентов.
+
+Функционал задачи нужно разделить между компонентами, чтобы они оставались максимально простыми.
+
+--
+
+### Иерархия компонентов
+
+```StudentList``` – отображает заголовок, список студентов и число отмеченных студентов.
+
+```Student``` – отображает студента нужным цветом, обрабатывает команды пользователя.
+
+--
+
+### Состояние
+
+Информацию об отмеченных студентах будем хранить в компоненте ```StudentList```.
+ 
+Выполним типичную операцию React – подъем состояния.
+
+---
+
+# Компонент нижнего уровня
+
+--
+
+### Описание свойств
+
+```Kotlin
+external interface StudentProps : Props {
+    var student: Student
+    var marked: Boolean
+    var onClick: (Event) -> Unit
+}
+```
+
+--
+
+### Компонент
+
+```Kotlin
+val CStudent = fc { props: StudentProps ->
+    div(if (props.marked) "marked" else "unmarked") {
+        +"${props.student.firstname} ${props.student.surname}"
+        attrs.onClickFunction = props.onClick
+    }
+}
+```
+
+
+--
+
+### Конструтор
+
+```Kotlin
+fun RBuilder.student(
+	student: Student, 
+	marked: Boolean, 
+	onClick: (Event) -> Unit
+) = child(CStudent) {
+        attrs.student = student
+        attrs.marked = marked
+        attrs.onClick = onClick
+    }
+```
+
+---
+
+# Компонент верхнего уровня
+
+--
+
+### Описание свойств и состояния
+
+```Kotlin
+interface StudentListProps : Props {
+    var students: Array<Student>
+}
+
+interface StudentListState : State {
+    var marked: Array<Boolean>
+}
+```
+
+--
+
+### Компонент
+
+```Kotlin
+class StudentList : RComponent<StudentListProps, StudentListState>() {
+    init {
+        state.apply {
+            marked = Array(3) { false }
+        }
+    }
+
+    override fun RBuilder.render() { }
+
+    fun onClick(index: Int): (Event) -> Unit = { }
+}
+```
+
+--
+
+### Render
+
+```Kotlin
+override fun RBuilder.render() {
+	ol {
+		props.students.mapIndexed { index, student ->
+			li {
+				student(student, state.marked[index], onClick(index))
+			}
+		}
+	}
+	div {
+		val markedStudents = state.marked.sumOf { if(it) 1L else 0 }
+		+"$markedStudents marked"
+	}
+}
+```
+
+--
+
+### OnClick
+
+```Kotlin
+fun onClick(index: Int): (Event) -> Unit = {
+	setState {
+		marked[index] = !marked[index]
+	}
+}
+```
+
+---
+
+### Результат
+
+![](images/react-app.jpg)
+
+</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>

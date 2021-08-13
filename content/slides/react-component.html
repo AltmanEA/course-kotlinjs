@@ -207,6 +207,24 @@ override fun RBuilder.render() {
 	}
 }
 ```
+
+--
+
+### Конструктор компонента
+
+```Kotlin
+fun RBuilder.student(student: Student) =
+    child(CStudent::class) {
+        attrs.student = student
+    }
+```
+
+--
+
+### Что получилось
+
+![](images/react-component-state.jpg)
+
                     </script>
                 </section>
             </div>
