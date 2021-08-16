@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Стурктура компонента</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Жизненный цикл компонента
+
+--
+
+### Монтирование
+
+- [```constructor(props)```](https://reactjs.org/docs/react-component.html#constructor)
+- [```static getDerivedStateFromProps(props, state)```](https://reactjs.org/docs/react-component.html#static-getderivedstatefromprops)
+- [```render()```](https://reactjs.org/docs/react-component.html#render)
+- [```componentDidMount()```](https://reactjs.org/docs/react-component.html#componentdidmount)
+
+Устаревший: [```UNSAFE_componentWillMount()```](https://reactjs.org/docs/react-component.html#unsafe_componentwillmount)
+
+--
+
+### Обновление
+
+- [```static getDerivedStateFromProps(props, state)```](https://reactjs.org/docs/react-component.html#static-getderivedstatefromprops)
+- [```shouldComponentUpdate(nextProps, nextState)```](https://reactjs.org/docs/react-component.html#shouldcomponentupdate)
+- [```render()```](https://reactjs.org/docs/react-component.html#render)
+- [```getSnapshotBeforeUpdate(prevProps, prevState)```](https://reactjs.org/docs/react-component.html#getsnapshotbeforeupdate)
+- [```componentDidUpdate(prevProps, prevState, snapshot)```](https://reactjs.org/docs/react-component.html#componentdidupdate)
+
+--
+
+### Размонтирование
+
+- [```componentWillUnmount()```](https://reactjs.org/docs/react-component.html#componentwillunmount)
+
+--
+
+### Конструктор в Kotlin
+
+```Kotlin
+abstract class RComponent<P : Props, S : State> 
+	: Component<P, S> {
+    constructor() : super() {
+        state = jsObject { init() }
+    }
+    constructor(props: P) : super(props) {
+        state = jsObject { init(props) }
+    }
+    open fun S.init() {}
+    // if you use this method, 
+	// don't forget to pass props to the constructor first
+    open fun S.init(props: P) {}
+}
+```
+
+--
+
+### Переписываем конструктор
+
+```Kotlin
+class StudentList(props: StudentListProps) :
+    RComponent<StudentListProps, StudentListState>(props) {
+
+    override fun StudentListState.init(props: StudentListProps) {
+        marked = Array(props.students.size) { false }
+    }
+```
+
+---
+
+# Хуки для сборки компонента
+
+--
+
+### Мотивация
+
+Компоненты React стали сложны:
+- сложно переиспользовать отдельные функции (нет возможности делегировать);
+- движку сложнее оптимизировать рендер, нужно учитывать неиспользумые элементы компонетов.
+
+--
+
+### Решение
+
+- За основу берется простой функциональный компонент.
+- Остальная функциональность компонентов прицепляется с помощью хуков.
+
+*Хук* (hook) — функция, отвечающая некоторым соглашениям, добавляющая к функциональному компоненты возможности компонентов на основе классов.
+
+--
+
+### Хук useState
+
+```Kotlin
+val CStudentList = fc { props: StudentListProps ->
+    val (marked, setMarked) = useState(props.students.map { false })
+    fun onClick(index: Int): (Event) -> Unit = { ...  }
+    ol { 
+		props.students.mapIndexed { index, student ->
+            li { student(student, marked[index], onClick(index))}
+    	}	
+	}
+    div { val markedStudents = marked.sumOf { if (it) 1L else 0 }
+        +"$markedStudents marked"
+	}	
+}
+```
+
+--
+
+### Типизированный useState
+
+```Kotlin
+external fun <T> useState(initializer: () -> T): StateInstance<T>
+
+class StateInstance<T>
+	private constructor() {
+		inline operator fun component1(): T = asDynamic()[0]
+		inline operator fun component2(): StateSetter<T> 
+			= asDynamic()[1]
+			...	
+
+class StateSetter<T>
+	private constructor() {
+		inline operator fun invoke(value: T) { asDynamic()(value) }
+		inline operator fun invoke(
+			noinline transform: (T) -> T) { asDynamic()(transform) }
+	}
+```
+
+
+--
+
+### setState с useState
+
+```Kotlin
+fun onClick(index: Int): (Event) -> Unit = {
+	setMarked{ 
+		it.mapIndexed {_index, mark ->
+			if (index==_index)
+				!mark
+			else
+				mark
+		}
+	}
+}
+```
+
+--
+
+### useEffect
+
+```Kotlin
+val CStudentList = fc { props: StudentListProps ->
+    val (marked, setMarked) = useState(props.students.map { false })
+    val markedStudents = marked.sumOf { if (it) 1L else 0 }
+    useEffect {
+        document.title = "$markedStudents marked"
+    }
+```
+
+--
+
+### Результат
+
+![](images/react-hook.jpg)
+
+---
+
+# Альтер-нативы хукам
+
+
+</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
