@@ -1,5 +1,5 @@
 ---
-title: "4. Приложение React"
+title: "4. Приложения React"
 weight: 30
 ---
 

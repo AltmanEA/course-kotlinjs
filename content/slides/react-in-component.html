@@ -4,7 +4,7 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>Стурктура компонента</title>
+		<title>Разложение компонентов</title>
 
 		<link rel="stylesheet" href="dist/reset.css">
 		<link rel="stylesheet" href="dist/reveal.css">
@@ -180,6 +180,62 @@ val CStudentList = fc { props: StudentListProps ->
 ---
 
 # Альтер-нативы хукам
+
+--
+
+### Render props
+
+- Техника для переиспользования кода между компонентами.
+- Компонент, добавляющий функциональность, оборачивает компонент, в который функциональность добавляется.
+- Внешний компоненту получает внутренный в виде функции в props.
+- Внешний компонент реализуют функциональность, а для render'a использует внутренний компонент.
+
+--
+
+### Render props
+
+```Kotlin
+fun <P : Props> withDisplayNameRP(
+    name: String, fComp: FC<P>
+): FC<P> =
+    fc(name) {
+        child(fComp, it)
+    }
+
+fun RBuilder.studentList(students: Array<Student>) =
+	child(withDisplayNameRP("StudentList", CStudentList)) {
+		attrs.students = students
+	}
+```
+
+--
+
+### Higher-Order Components
+
+- Техника для переиспользования кода между компонентами.
+- Представляет собой функцию, на входе которой – компонент, а на выходе этот же компонент с дополнительной функциональностью.
+
+--
+
+### Higher-Order Components
+
+```Kotlin
+fun <P : Props> withDisplayNameHOC(
+    name: String, fComp: FC<P>
+): FC<P> =
+    Object.assign(fComp, js {
+        displayName = name
+    })
+
+fun RBuilder.student( ... ) =
+	child(withDisplayNameHOC("Student", CStudent)) {
+```
+
+--
+
+### Результат
+
+![](images/react-hoc.jpg)
 
 
 </script>
