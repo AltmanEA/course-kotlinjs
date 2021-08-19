@@ -12,4 +12,4 @@ weight: 10
 3. <a target="_blank" rel="noopener noreferrer" href="react-component.html">Компоненты React</a>
 4. <a target="_blank" rel="noopener noreferrer" href="react-app.html">Приложения React</a>
 5. <a target="_blank" rel="noopener noreferrer" href="react-in-component.html">Разложение компонетов</a>
-5. <a target="_blank" rel="noopener noreferrer" href="react-context.html">Переменные компонетов</a>
+5. <a target="_blank" rel="noopener noreferrer" href="react-app-complex.html">Усложненное приложение React</a>

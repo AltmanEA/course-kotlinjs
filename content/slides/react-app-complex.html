@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Усложненное приложение React</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Ссылки на элементы
+
+--
+
+### Задача
+
+В приложение нужно добавить выбор режима отображения информации: 
+
+"Full" – полный, "Short" – усеченнный.
+
+Реализуем компонент выбора на радиокнопках.
+
+--
+
+### ModePicker
+
+```Kotlin
+val CModePicker = fc("ModePicker") { 
+    val modes = listOf("Full", "Short")
+    h3 { +"Output Mode" }
+    modes.map { _mode ->
+        span {
+            input(InputType.radio, name = "outputMode") {
+                attrs.value = _mode
+            }
+            +_mode            
+        }
+    }
+}
+```
+
+
+--
+
+### Ссылки на INPUT
+
+```Kotlin
+val CModePicker = fc("ModePicker") { 
+    val modes = listOf("Full", "Short")
+    val refs = modes.map { useRef<INPUT>() }
+    h3 { +"Output Mode" }
+    modes.mapIndexed { index, _mode ->
+        span {
+            input(InputType.radio, name = "outputMode") {
+                attrs.value = _mode
+                ref = refs[index]
+            }
+            +_mode
+			attrs.onClickFunction = onChange
+        }
+    }
+}
+```
+
+--
+
+### onChange
+
+```Kotlin
+val (mode, setMode) = useState("Full")
+val onChange: (Event) -> Unit = {
+	refs
+		.find { it.current?.checked ?: false }
+		?.current?.value
+		?.let {
+			if (it != mode)
+				setMode(it)
+		}
+}
+```
+
+---
+
+# Контекст
+
+--
+
+### Задача
+
+- Режим отображения обычно нужно знать многим комопнентам на низком уровне.
+- Прокидывать режим отображения через props через другие компоненты – много лишнего кода.
+- Использовать глобальные переменные – еще хуже.
+- Будем использовать Context.
+
+--
+
+### Контекст
+
+- – глобальная переменная, изменять значение которой может только специальный компонент React – Provider.
+- Читать значение этой переменной может любой компонент, который должен зарегистрироваться как Consumer.
+
+--
+
+### main.kt
+
+```Kotlin
+val shortOutput = createContext("Full")
+
+fun main() {
+    render(document.getElementById("root")) {
+        child(CApp)
+    }
+}
+```
+
+--
+
+### App.kt
+
+```Kotlin
+val CApp = fc<Props>("App"){
+    val (mode, setMode) = useState("Full")
+    modePicker(mode, setMode)
+    shortOutput.Provider(mode){
+        h1 {
+            +"List of student"
+        }
+        studentList(data.studentList.toTypedArray())
+    }
+}
+```
+
+--
+
+### CStudent
+
+```Kotlin
+val CStudent = fc ("Student") { props: StudentProps ->
+    div(if (props.marked) "marked" else "unmarked") {
+        if(useContext(shortOutput)=="Full")
+            +props.student.fullName
+        else
+            +props.student.shortName
+        attrs.onClickFunction = props.onClick
+    }
+}
+```
+
+--
+
+## Результат
+
+![](images/ref-and-context.jpg)
+
+
+
+
+
+                    </script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
