@@ -161,8 +161,177 @@ val CStudent = fc ("Student") { props: StudentProps ->
 ![](images/ref-and-context.jpg)
 
 
+---
 
+# Параметри-зованные компоненты
 
+--
+
+### Задача
+
+- Усложним приложение, добавим возможность составлять несколько списков студентов (например, по занятиям).
+
+- Создадим компонент, который может отображать и отмечать различные списки (студентов на занятии или занятий, посещенных студентом.)
+
+--
+
+### Свойства компонента
+
+```Kotlin
+interface MarkedListProps<E> : Props {
+    var elements: List<Pair<E, Boolean>>
+    var onClick: (Int) -> Unit
+    var comp: RBuilder.(E, Boolean) -> Unit
+}
+
+```
+
+--
+
+### Компонент
+
+```Kotlin
+fun <E> CMarkedList() = fc("MarkedList") {props: MarkedListProps<E>->
+    ol {
+        props.elements.mapIndexed {index, elem ->
+            li {
+                props.comp(this, elem.first, elem.second)
+                attrs.onClickFunction = {props.onClick(index)}
+            }
+        }
+    }
+}
+```
+
+--
+
+### Компонент для отображения
+
+```Kotlin
+val CStudent = fc ("Student") { props: StudentProps ->
+    span(if (props.marked) "marked" else "unmarked") {
+        if(useContext(shortOutput)=="Full")
+            +props.student.fullName
+        else
+            +props.student.shortName
+    }
+}
+```
+
+--
+
+### Компонент App, данные
+
+```Kotlin
+val CApp = fc<Props>("App"){
+    val (mode, setMode) = useState("Full")
+    val (marked, setMarked) = useState(data.studentList.map { false })
+    val elements = data.studentList.zip(marked)
+    fun onClick(index: Int){
+        setMarked{
+            it.mapIndexed {_index, mark ->
+                if (index==_index)
+                    !mark
+                else
+                    mark
+            }
+        }
+    }
+```
+
+--
+
+### Компонент App, render
+
+```Kotlin
+modePicker(mode, setMode)
+shortOutput.Provider(mode){
+    h1 {
+        +"List of student"
+    }
+    markedList(elements, ::onClick, RBuilder::student)
+}
+```
+
+---
+
+# Добавляем уроки
+
+--
+
+### Класс Lesson
+
+```Kotlin
+data class Lesson(
+    val name: String,
+    val students: MutableList<Student> = ArrayList()
+)
+```
+
+--
+
+### Исходные данные
+
+```Kotlin
+val studentsList = listOf(
+    Student("Sheldon", "Cooper"),
+    Student("Leonard", "Hofstadter"),
+    Student("Howard", "Wolowitz"),
+    Student("Penny", "Hofstadter"),
+)
+
+val lessonsList = listOf(
+    Lesson("Math", listOf(0, 1, 2).map { studentsList[it] }.toMutableList()),
+    Lesson("Phys", listOf(0, 1).map { studentsList[it] }.toMutableList()),
+    Lesson("Story", listOf(0, 1, 3).map { studentsList[it] }.toMutableList())
+)
+```
+
+--
+
+### Компонент App, данные
+
+```Kotlin
+val (marked, setMarked) = useState(data.lessonsList.map { 
+    it.students.map { false } })
+fun onClick(indexLesson: Int, indexStudent: Int) {
+    setMarked {
+        it.mapIndexed { _indexLesson, lesson ->
+            if (indexLesson == _indexLesson)
+                lesson.mapIndexed { _indexStudent, student ->
+                    if (indexStudent == _indexStudent)
+                        !student
+                    else
+                        student
+                }
+            else
+                lesson
+}   }   }
+```
+
+--
+
+### Компонент App, render
+
+```Kotlin
+modePicker(mode, setMode)
+shortOutput.Provider(mode) {
+    data.lessonsList.mapIndexed { index, lesson ->
+        h3 { +lesson.name }
+        markedList(
+            lesson.students.zip(marked[index]),
+            { onClick(index, it) },
+            RBuilder::student
+        )
+    }
+}
+```
+
+--
+
+### Результат
+
+![](images/react-complex-app.jpg)
 
                     </script>
                 </section>
