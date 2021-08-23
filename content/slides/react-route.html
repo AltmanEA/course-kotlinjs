@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>React route</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Маршру-тизация
+
+--
+
+### Провайдер
+
+```Kotlin
+fun main() {
+    render(document.getElementById("root")) {
+        hashRouter {
+            child(CApp)
+        }
+    }
+}
+```
+
+--
+
+### Результат
+
+![](images/hash-router.jpg)
+
+--
+
+### Установка маршрута
+
+```Kotlin
+val CNavigator = fc<Props>("Navigator") {
+    ul {
+        li { routeLink("/lecture") { +"Lecture" } }
+        li { routeLink("/students") { +"Student" } }
+    }
+}
+```
+
+--
+
+### Результат
+
+![](images/router-link.jpg)
+
+--
+
+### Рендер маршрута
+
+```Kotlin
+shortOutput.Provider(mode) {
+	switch {
+		route("/lesson",
+			render = { ... }
+		)
+		route("/student",
+			render = { ... }
+		)
+	}
+```
+
+--
+
+### Рендер маршрута lesson
+
+```Kotlin
+render = {
+	lessonsList.mapIndexed { index, lesson ->
+		h3 { +lesson.name }
+		markedList(
+			lesson.students.zip(marked[index]),
+			{ onClick(index, it) },
+			RBuilder::student
+		)
+	}
+}
+```
+
+--
+
+### Рендер маршрута student
+
+```Kotlin
+studentsList.mapIndexed { indexStudent, student ->
+	h3 { +student.fullName }
+	val list = lessonsList.mapIndexedNotNull {indexLesson, lesson ->
+		val index = lesson.students.indexOf(student)
+		if (index>=0)
+			lesson to marked[indexLesson][index]
+		else
+			null
+	}
+	markedList(
+		list,
+		{ onClick(it, indexStudent) },
+		RBuilder::lesson
+	)
+}
+```
+
+---
+
+# Параметры маршрута
+
+--
+
+### Список уроков
+
+```Kotlin
+route("/lesson",
+	exact = true,
+	render = {
+		h3 { +"Lessons" }
+		ol {
+			lessonsList.map { lesson ->
+				li { 
+					routeLink("/lesson/${lesson.name}") {
+						 +lesson.name 
+					}
+				}
+			}
+		}
+	}
+)
+```
+
+--
+
+### Урок
+
+```Kotlin
+route("/lesson/:name",
+render = { routeProps: RouteResultProps<NameRouterProps> ->
+	val lessonName = routeProps.match.params.name
+	val index = lessonsList.indexOfFirst { it.name == lessonName }
+	val lesson = lessonsList.getOrNull(index)
+	if (lesson == null)
+		h3 { +"Lesson $lessonName not found" }
+	else {
+		h3 { +lesson.name }
+		markedList(
+			lesson.students.zip(marked[index]),
+			{ onClick(index, it) },
+			RBuilder::student
+		)
+	}})
+```
+
+--
+
+### Список студентов
+
+```Kotlin
+route("/student",
+	exact = true,
+	render = {
+		h3 { +"Students" }
+		ol {
+			studentsList.map { student ->
+				li { 
+					routeLink("/student/${student.idName}") {
+						 +student.fullName 
+					} 
+				}
+		}
+	}
+}
+)
+```
+
+--
+
+### Студент
+
+```Kotlin
+route("/student/:name",
+render = { routeProps: RouteResultProps<NameRouterProps> ->
+	val studentMame = routeProps.match.params.name
+	val indexStudent = studentsList.indexOfFirst { 
+		it.idName == studentMame 
+	}
+	val student = studentsList.getOrNull(indexStudent)
+	if (student == null)
+		h3 { +"Student $studentMame not found" }
+	else {
+		h3 { +student.fullName }
+		...
+	}
+}
+)
+```
+
+--
+
+### Уроки студента
+
+```Kotlin
+val lessonStudent = lessonsList
+	.mapIndexedNotNull { indexLesson, lesson ->
+		val students = lesson.students
+		val index = students.indexOf(student)
+		if (index >= 0)
+			indexLesson to index
+		else null
+	}
+markedList(
+	lessonStudent.map { 
+		lessonsList[it.first] to marked[it.first][it.second] 
+	},
+	{ onClick(lessonStudent[it].first, lessonStudent[it].second) },
+	RBuilder::lesson
+)
+```
+
+---
+
+# Результат
+
+--
+
+### Список студентов
+
+![](images/route-students.jpg)
+
+
+--
+
+### Студент
+
+![](images/route-sheldon.jpg)
+
+
+</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
