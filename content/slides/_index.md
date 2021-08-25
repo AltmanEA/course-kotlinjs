@@ -14,3 +14,4 @@ weight: 10
 5. <a target="_blank" rel="noopener noreferrer" href="react-in-component.html">Разложение компонетов</a>
 6. <a target="_blank" rel="noopener noreferrer" href="react-app-complex.html">Усложненное приложение</a>
 7. <a target="_blank" rel="noopener noreferrer" href="react-route.html">React Route</a>
+8. <a target="_blank" rel="noopener noreferrer" href="react-redux.html">React Redux</a>
