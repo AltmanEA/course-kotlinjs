@@ -16,297 +16,318 @@
 			<div class="slides">
                 <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
                     <script type="text/template">
-# Состояние и управление им
+# Структура проекта
 
 --
 
-### Состояние (State)
+### Основные идеи
 
-```redux/State.kt:```
-```Kotlin
-class State(
-    val lessons: List<Lesson>,
-    val students: List<Student>,
-    val marked: Map<String, Set<String>>
-) { ... }
-```
+- Используется одно общее управляемое состояние приложения.
+- Для каждого компонента отдельно выбираются нужные данные и действия.
+- Для выбора нужных данных и действий используются специальные компоненты – контейнеры, которые передают нужные данные и функции интерфейсным компонентам в виде свойств.
+
 
 --
 
-### Производные (Derivations)
+### Состояние
 
 ```Kotlin
-fun getMarkedList(lesson: Lesson): List<Pair<Student, Boolean>> {
-	val studentsSet = marked[lesson.name] ?: emptySet()
-	return lesson.students.map {
-		it to studentsSet.contains(it.idName)
-	}
-}
-
-fun getMarkedList(student: Student): List<Pair<Lesson, Boolean>> =
-	lessons
-		.filter { it.students.contains(student) }
-		.map {
-			it to (marked[it.name]
-						?.contains(student.idName)
-						?: false)
-		}
-```
-
---
-
-### Действия (Action)
-
-```redux/action.kt:```
-```Kotlin
-class MarkStudent(
-	val lessonName: String, 
-	val studentId: String
-): RAction
-```
-
---
-
-### Редюсеры (Reducers)
-
-```redux/reducers.kt:```
-```Kotlin
-
-val markReducer: RReducer<State, RAction> =
-    { state, action ->
-        when (action) {
-            is MarkStudent ->
-                State(
-                    state.lessons,
-                    state.students,
-					... // new marked
-                )
-            else -> state
-        }
-    }
-```
-
---
-
-### Новые отметки
-
-```Kotlin
-state.marked.toMutableMap().let {
-	val lesson = it[action.lessonName]
-	if (lesson == null)
-		it[action.lessonName] = setOf(action.studentId)
-	else
-		it[action.lessonName] =
-			if (lesson.contains(action.studentId))
-				lesson - action.studentId
-			else
-				lesson + action.studentId
-	it
-}
-```
-
---
-
-### Используем reducer
-
-```Kotlin
-val CApp = fc<Props>("App") {
-    val (state, dispatch) = useReducer(markReducer, testState())
-	... 
-	// route /lesson/:name
-	h3 { +lesson.name }
-	val stateList = state.getMarkedList(lesson)
-	markedList(
-		stateList,
-		{ dispatch(
-			MarkStudent(lesson.name, stateList[it].first.idName)
-		) },
-		RBuilder::student
-	)
-```
-
---
-
-### Используем reducer
-
-```Kotlin
-val CApp = fc<Props>("App") {
-    val (state, dispatch) = useReducer(markReducer, testState())
-	... 
-	// route /student/:name
-	h3 { +student.fullName }
-	val stateList = state.getMarkedList(student)
-	markedList(
-		stateList,
-		{ dispatch(
-			MarkStudent(stateList[it].first.name, student.idName)
-		)},
-		RBuilder::lesson
-	)
-```
-
---
-
-### Основные моменты
-
-- State.
-- Изменяется только dispatch.
-- Аргумент dispatch - Action.
-- Вычисляет новое состояние - Reducer.
-
----
-
-# Несколько действий
-
---
-
-### Действие
-
-```Kotlin
-class AddStudentToLesson(
-	val lessonName: String, 
-	val studentId: String
-): RAction
-```
-
---
-
-### Reducer
-
-```Kotlin
-val markReducer: RReducer<State, RAction> =
-    { state, action ->
-        when (action) {
-            is MarkStudent -> 
-				markStudentNewState(state, action)
-            is AddStudentToLesson -> 
-				addStudentToLessonNewState(state, action)
-            else -> state
-        }
-    }
-```
-
---
-
-### Reducer
-
-```Kotlin
-private fun addStudentToLessonNewState(
-	state: State, action: AddStudentToLesson
-): State {
-    val student = state.students.find { 
-		it.idName == action.studentId 
-	}
-    return if (student == null)
-        state
-    else
-		... // new state
-}
-```
-
---
-
-### Reducer
-
-```Kotlin
-State(
-    state.lessons.map { lesson ->
-        if (lesson.name == action.lessonName)
-            Lesson(
-                lesson.name,
-            	lesson.students + student
-            )
-        else
-			lesson
-    },
-    state.students,
-    state.marked
+class FullState(
+    val mode: String,
+    val data: State
 )
 ```
 
 --
 
-## Интерфейс для добавления
+### Хранилище
 
---
-
-### Дорабатываем SELECT
 
 ```Kotlin
-interface  HTMLOptionsCollection{
-    val selectedIndex: Int
-}
-
-class SelectExt(
-	initialAttributes : Map<String, String>, 
-	consumer : TagConsumer<*>
-) : SELECT(initialAttributes, consumer){
-    val options: HTMLOptionsCollection? = null
-}
+val store: Store<FullState, RAction, WrapperAction> = createStore(
+    fullReducer(),
+    FullState("Full", testState()),
+    compose(
+        rEnhancer(),
+        js("if(window.__REDUX_DEVTOOLS_EXTENSION__ )window.__REDUX_DEVTOOLS_EXTENSION__ ();else(function(f){return f;});")
+    )
+)
 ```
 
 --
 
-### Компонент для добавления. Свойства
+### Провайдеры
 
 
 ```Kotlin
-interface AddElementProps : Props {
-    var elements: List<String>
-    var onSelect: (String) -> Unit
-}
-```
-
---
-
-### Компонент для добавления. Выбор
-
-
-```Kotlin
-fun CAddElement() = fc("SelectElement") { props: AddElementProps ->
-    val selectRef = useRef<SelectExt>()
-    select {
-        ref = selectRef
-        props.elements.map { element ->
-            option {
-                attrs.value = element
-                +element
+fun main() {
+    render(document.getElementById("root")) {
+        provider(store) {
+            hashRouter {
+                child(cApp)
             }
         }
+    }
+}
+```
+
+--
+
+### App
+
+
+```Kotlin
+val cApp = fc<Props>("App") {
+    modePickerContainer {}
+    navigator()
+    switch {
+        route("/lessons", exact = true,
+            render = { lessonListContainer {} } )
+        route("/lessons/:name", 
+            render = { lessonContainer {} } )
+        route("/students", exact = true, 
+            render = { studentListContainer {} } )
+        route("/students/:name",
+            render = { studentContainer {} } )
+    }
+}
+```
+
+---
+
+# Reducers
+
+
+--
+
+### Data
+
+
+```Kotlin
+fun dataReducer(): Reducer<State?, RAction> =
+    { state, action ->
+        if (state == null)
+            State()
+        else
+            when (action) {
+                is MarkStudent -> 
+					markStudentNewState(state, action)
+                is AddStudentToLesson -> 
+					addStudentToLessonNewState(state, action)
+                else -> state
+            }
     }
 ```
 
 --
 
-### Компонент для добавления. Действие
+### Mode
 
 
 ```Kotlin
-button {
-	+"Add"
-	attrs.onClickFunction = {
-		val select = selectRef.current
-		select?.let {
-			it.options?.selectedIndex?.let {
-				props.elements.getOrNull(it)?.let {
-					props.onSelect(it)
-				}
-			}
-		}
-	}
+class SetMode(val newMode: String):RAction
+
+fun paramReducer(): Reducer<String?, RAction> =
+    { state, action ->
+        if (state == null)
+            "Full"
+        else
+            when (action) {
+                is SetMode -> action.newMode
+                else -> state
+            }
+    }
+```
+
+--
+
+### Общий
+
+
+```Kotlin
+fun fullReducer(): Reducer<FullState, RAction> =
+    combineReducers(
+        mapOf(
+            "mode" to paramReducer(),
+            "data" to dataReducer()
+        )
+    )
+```
+
+---
+
+# Контейнеры
+
+--
+
+### Компонент StudentList
+
+
+```Kotlin
+interface StudentListProps : Props {
+    var students: List<Student>
+}
+
+val cStudentList = fc("StudentList"){props: StudentListProps ->
+    h3 { +"Students" }
+    ol {
+        props.students.map { student ->
+            val name = student.idName
+            li { routeLink("/students/$name") { +name} }
+        }
+    }
 }
 ```
 
 --
 
-### Компонент для добавления. Использование
+### Контейнер StudentList
 
-```CApp, route /lesson/:name":```
+
 ```Kotlin
-val candidate = (state.students - lesson.students).map { it.idName }
-addElement(candidate) {
-	dispatch(AddStudentToLesson(lesson.name, it))
+val studentListHOC: HOC<StudentListProps, Props> =
+    rConnect<
+            FullState,
+            Props,
+            StudentListProps
+            >(
+        mapStateToProps = { state, _ ->
+            students = state.data.students
+        }
+    )
+
+val studentListContainer: ComponentClass<Props> = studentListHOC(
+        cStudentList.unsafeCast<ComponentClass<StudentListProps>>()
+    )
+```
+
+--
+
+### Свойства StudentLine
+
+```Kotlin
+interface StudentLineOwnProps : Props {
+    var student: Student
+    var marked: Boolean
 }
+
+interface StudentLineStateProps : Props {
+    var mode: String
+}
+
+interface StudentLineProps : 
+	StudentLineOwnProps, StudentLineStateProps
+```
+
+--
+
+### Компонент StudentLine
+
+```Kotlin
+val cStudentLine = fc("StudentLine") { props: StudentLineProps ->
+    span(if (props.marked) "marked" else "unmarked") {
+        if (props.mode == "Full")
+            +props.student.fullName
+        else
+            +props.student.shortName
+    }
+}
+```
+
+--
+
+### HOC StudentLine
+
+```Kotlin
+val studentLineHOC: HOC<StudentLineProps, StudentLineOwnProps> =
+    rConnect<
+            FullState,
+            StudentLineOwnProps,
+            StudentLineProps
+            >(
+        mapStateToProps = { state, own ->
+            mode = state.mode
+            student = own.student
+            marked = own.marked
+        }
+    )
+```
+
+--
+
+### React element studentLine
+
+```Kotlin
+val studentLineContainer: ComponentClass<StudentLineOwnProps> =
+    studentLineHOC(
+        cStudentLine.unsafeCast<ComponentClass<StudentLineProps>>()
+    )
+
+fun RBuilder.studentLine(student: Student, marked: Boolean) =
+    child(studentLineContainer) {
+        attrs.student = student
+        attrs.marked = marked
+    }
+```
+
+--
+
+### Свойства Student
+
+```Kotlin
+interface StudentStateProps : Props {
+    var data: State
+}
+
+interface StudentDispatchProps : Props {
+    var markLesson: (String, String) ->Unit
+}
+
+interface StudentProps: StudentStateProps, StudentDispatchProps
+```
+
+--
+
+### Компонент Student
+
+```Kotlin
+val cStudent = fc("Student"){props: StudentProps ->
+    val studentId = useParams<NameRouterProps>()?.name
+    val student = props.data.students.find { it.idName == studentId }
+    if (student == null)
+        h3 { +"Student $studentId not found" }
+    else {
+        h3 { +student.fullName }
+        val stateList = props.data.getMarkedList(student)
+        markedList(
+            stateList,
+            { props.markLesson(
+				stateList[it].first.name, student.idName) },
+            RBuilder::lessonLine
+        )
+}	}
+```
+
+--
+
+### Контейнер Student
+
+```Kotlin
+val studentContainer = rConnect<
+            FullState,
+            RAction,
+            WrapperAction,
+            Props,
+            StudentStateProps,
+            StudentDispatchProps,
+            StudentProps >(
+        mapStateToProps = { state, _ -> data = state.data },
+        mapDispatchToProps = { dispatch, _ ->
+            markLesson = { lesson, student ->
+                dispatch(MarkStudent(lesson, student))
+            }
+        }
+    )( cStudent.unsafeCast<ComponentClass<StudentProps>>())
 ```
 
 </script>
