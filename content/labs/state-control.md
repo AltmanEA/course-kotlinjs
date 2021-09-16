@@ -7,6 +7,11 @@ weight: 80
 
 <a target="_blank" rel="noopener noreferrer" href="../../slides/state-control.html">Лекция</a>
 
+### Проекты из лекций
+
+- [Управление состоянием](https://github.com/AltmanEA/edu-react/tree/5f32319cacaae83a1737b3642854a6dc984f2a9f)
+- [Несколько действий и интерфейс для команд](https://github.com/AltmanEA/edu-react/tree/b4c31b7b3a3dc9eb54aba8e54fdca4c1fde579f0)
+
 ### Задание
 
 1. Используя приложение из предыдущего задания переделайте приложение из лекций так, чтобы студентам можно было бы выставлять оценки по предметам.
