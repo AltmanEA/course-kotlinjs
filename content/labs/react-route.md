@@ -1,6 +1,6 @@
 ---
 title: "7. React route"
-weight: 30
+weight: 70
 ---
 
 ### Теоретические сведения

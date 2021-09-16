@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Тестирование приложений React</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Тест управления состоянием
+
+--
+
+### Тестирование Kotlin JS
+
+- Karma
+- Mocha (kotlin test)
+
+(main.kt!)
+
+--
+
+### Тестируем редюсеры
+
+```Kotlin
+@Test
+fun reducersTest(){
+	val store = createStore(
+		fullReducer(),
+		FullState("Full", testState()),
+		rEnhancer()
+	)
+	assertEquals(0, store.getState().data.marked.size)
+	store.dispatch(MarkStudent("Phys", "SheldonCooper"))
+	assertEquals(1, store.getState().data.marked.size)
+	assertEquals(1, store.getState().data.marked["Phys"]?.size)
+	assertTrue(store.getState().
+		data.marked["Phys"]?.contains("SheldonCooper")?:false)
+}
+```
+
+--
+
+### Тестируем селекторы
+
+```Kotlin
+store.dispatch(MarkStudent("Phys", "SheldonCooper"))
+store.dispatch(MarkStudent("Math", "SheldonCooper"))
+store.dispatch(MarkStudent("Math", "LeonardHofstadter"))
+val sheldon = store.getState().data.students.find { 
+	it.firstname == "Sheldon" }!!
+val sheldonLesson = store.getState().data.getMarkedList(sheldon)
+assertEquals(3, sheldonLesson.size)
+assertEquals(2, sheldonLesson.filter { it.second }.size)
+val math = store.getState().data.lessons.find { it.name == "Math" }!!
+val mathStudent = store.getState().data.getMarkedList(math)
+assertEquals(3, mathStudent.size)
+assertEquals(2, mathStudent.filter { it.second }.size)
+```
+
+---
+
+# Тест компонентов
+
+--
+
+### Варианты тестирования
+
+- Компоненты без состояния, контекста и хуков;
+- Сложные компоненты.
+
+####
+#### Библиотеки
+
+- jest;
+- react test library;
+- enzyme;
+
+--
+
+### Настройка Karma
+
+[Тестирование Kotlin/JS: фреймворки, корутины и все-все-все](https://habr.com/ru/post/537670/)
+
+```karma.config.d/contextHTML.js```
+```JavaScript
+config.set({
+    customContextFile: "../../../../../src/test/resources/context.html"
+})
+```
+
+build/js/node_modules/karma/static/context.html -> /src/test/resources/context.html
+
+Добавляем после всех скриптов:
+```
+<div id="root"></div>
+```
+
+--
+
+### Тестируем компонент
+
+```Kotlin
+@Test
+fun studentLineTest(){
+	val divElem = document.getElementById("root")
+	render(divElem){
+		child(cStudentLine()){
+			attrs.student = Student("Test", "Student")
+			attrs.marked = true
+			attrs.mode = "Full"
+		}
+	}
+	println(divElem?.innerHTML)
+	val elem = divElem?.children?.get(0) as HTMLElement
+	assertEquals("marked", elem.className)
+	assertEquals("Test Student", elem.innerText)
+```
+
+--
+
+### Тестируем компонент 2 
+
+```Kotlin
+render(divElem){
+	child(cStudentLine()){
+		attrs.student = Student("Test", "Student")
+		attrs.marked = false
+		attrs.mode = "Short"
+	}
+}
+println(divElem.innerHTML)
+
+val elem2 = divElem.children[0] as HTMLElement
+assertEquals("unmarked", elem2.className)
+assertEquals("T. Student", elem2.innerText)
+```
+
+--
+
+### Тестирование сложных компонентов
+
+Проблема побочных данных (состояние, контекст, маршруты и др.):
+- вынести все побочные переменные в контейнер;
+- задавать значение всех провайдеров.
+
+Проблема вложенных компонентов:
+- создавать mock-компоненты;
+- использовать библиотеки, в том числе создающие mock-контейнеры.
+
+---
+
+# Тестирование интерфейса
+
+--
+
+### Selenium
+
+```Kotlin
+dependencies {
+    implementation("org.seleniumhq.selenium:selenium-java:3.141.5")
+    testImplementation(kotlin("test"))
+}
+```
+
+--
+
+### Подключаем драйвер
+
+```Kotlin
+class AppTest {
+    init {
+        System.setProperty(
+			"webdriver.chrome.driver", 
+			"c:/prog/chromedriver.exe"
+		)
+    }
+```
+
+--
+
+### Запускаем браузер и кликаем
+
+```Kotlin
+@Test
+fun listsTest() {
+	ChromeDriver().apply {
+		get("http://localhost:8080/")
+		Thread.sleep(1000)
+		findElementByXPath("//a[text()='Lessons']").click()
+		findElementByXPath("//a[text()='Math']").click()
+		findElementByXPath("//span[contains(.,'Sheldon')]").click()
+```
+
+--
+
+### Работаем с HTML элементами
+
+```Kotlin
+findElementByXPath("//a[text()='Lessons']").click()
+findElementByXPath("//a[text()='Phys']").click()
+Select(findElement(By.cssSelector("select")))
+	.selectByValue("PennyHofstadter")
+findElementByXPath("//button").click()
+```
+
+--
+
+### Ищем элементы
+
+```Kotlin
+findElementByXPath("//a[text()='Students']").click()
+findElementByXPath("//a[contains(.,'Penny')]").click()
+val subjs = findElement(By.cssSelector("ol"))
+	.findElements(By.cssSelector("li"))
+	.size
+assertEquals(2, subjs)
+
+close()
+```
+
+--
+
+### Тест
+
+<video controls><source src="video/selenium-test.mp4" type="video/mp4"></video>
+
+					</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>

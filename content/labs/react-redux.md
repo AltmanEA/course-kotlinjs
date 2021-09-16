@@ -1,6 +1,6 @@
 ---
 title: "9. React redux"
-weight: 30
+weight: 90
 ---
 
 ### Теоретические сведения
