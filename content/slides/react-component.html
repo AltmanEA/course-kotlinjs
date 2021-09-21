@@ -246,7 +246,11 @@ fun RBuilder.student(student: Student) =
 				menu: {
 		        	themes: true,
         			themesPath: 'dist/theme/',
-		        }
+		        },
+				audio: {
+					prefix: 'audio/component/',
+					suffix: '.webm;codecs=opus'
+				}
 			});
 		</script>
 	</body>
