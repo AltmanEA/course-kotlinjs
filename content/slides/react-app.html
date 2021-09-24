@@ -183,7 +183,11 @@ fun onClick(index: Int): (Event) -> Unit = {
 				menu: {
 		        	themes: true,
         			themesPath: 'dist/theme/',
-		        }
+		        },
+				audio: {
+					prefix: 'audio/app/',
+					suffix: '.webm;codecs=opus'
+				}
 			});
 		</script>
 	</body>
