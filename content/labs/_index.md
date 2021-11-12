@@ -12,7 +12,7 @@ weight: 20
 1. [Приложения React](react-app) 17 октября	
 1. [Разложение компонентов](react-in-component) 24 октября	
 1. [Усложненное приложение](react-app-complex) 31 октября	
-1. [React route](react-route) 14 ноября	
-1. [Управление состоянием](state-control) 28 ноября	
-1. [React redux](react-redux) 12 декабря	
-1. [Тестирование приложений React](react-test) 26 декабря
+1. [React route](react-route) 21 ноября	
+1. [Управление состоянием](state-control) 5 декабря
+1. [React redux](react-redux) 19 декабря	
+1. [Тестирование приложений React](react-test) (факультативно)
