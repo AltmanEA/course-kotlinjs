@@ -1,0 +1,391 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>React Query</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# React query
+
+[https://react-query.tanstack.com/](https://react-query.tanstack.com/)
+
+Примеры на Kotlin [https://github.com/AltmanEA/kotlin-react-query-examples](https://github.com/AltmanEA/kotlin-react-query-examples)
+
+--
+
+### Подключаем библиотеки
+
+```Kotlin
+implementation(kotlinw("react-query"))
+implementation(npm("cross-fetch", "3.1.4"))
+implementation(npm("axios", "0.21.4"))
+```
+
+--
+
+### Дописываем wrapper ReactQueryDevTools
+
+```Kotlin
+interface QueryError{
+    val message: String
+}
+
+class ReactQueryDevToolsOption(
+	val initialIsOpen: Boolean = true
+)
+```
+
+--
+
+### Импортируем ReactQueryDevTools
+
+```Kotlin
+@JsModule("react-query/devtools")
+@JsNonModule
+external val ReactQueryDevtools: dynamic // module
+
+val reactQueryDevtools: (options: dynamic) -> ReactElement = 
+	ReactQueryDevtools.ReactQueryDevtools
+
+fun cReactQueryDevtools(
+	options: ReactQueryDevToolsOption = ReactQueryDevToolsOption()
+) = fc("ReactQueryDevtools") { _: Props ->
+    child(reactQueryDevtools(options))
+}
+```
+
+--
+
+### Дописываем wrapper cross-fetch
+
+```Kotlin
+@JsModule("cross-fetch")
+@JsNonModule
+external fun fetch(
+    url: String,
+    options: dynamic = definedExternally
+): Promise< HTTPResult >
+
+interface HTTPResult {
+    fun json(): Promise< dynamic >
+}
+```
+
+--
+
+### Дописываем wrapper axios
+
+```Kotlin
+
+@JsModule("axios")
+@JsNonModule
+external fun < T > axios(config: AxiosConfigSettings): 
+	Promise< AxiosResponse< T > >
+external interface AxiosConfigSettings {
+    var url: String
+    var method: String
+	... }
+external interface AxiosResponse< T > {
+    val data: T
+    val status: Number
+	...}
+```
+
+---
+
+## Простая загрузка
+
+--
+
+### Use Query
+
+```Kotlin
+val query = useQuery<Any, Any, Any, Any>(
+	"repoData",
+	{
+		fetch(
+			"https://api.github.com/repos/tannerlinsley/react-query"
+		)
+			.then { it.json() }
+	}
+)
+```
+
+--
+
+### Use Query wrapper
+
+```Kotlin
+external fun <TQueryFnData, TError, TData, TQueryKey : QueryKey> 
+	useQuery(
+    	queryKey: TQueryKey,
+    	queryFn: QueryFunction<TQueryFnData, TQueryKey>,
+    	options: 
+			UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> 
+			= definedExternally,
+): UseQueryResult<TData, TError>
+typealias QueryFunction<T, TQueryKey> = 
+	(context: QueryFunctionContext<TQueryKey, *>) 
+			-> kotlin.js.Promise<T>
+external interface QueryFunctionContext
+	<TQueryKey : QueryKey, TPageParam> {
+		var queryKey: EnsuredQueryKey<TQueryKey>
+		var pageParam: TPageParam }
+```
+
+--
+
+## React query component
+
+```Kotlin
+fun cSimple() = fc("Simple") { _: Props ->
+	val query = useQuery<Any, Any, Any, Any>( ..)
+	if (query.isLoading) div { +"Loading .." }
+    else if (query.isError) div { +"Error!" }
+    else { div {
+            val data: dynamic = query.data
+            h1 { +(data.name as String) }
+            p { +(data.description as String) }
+            strong { +"\uD83D\uDC40 ${data.subscribers_count} " }
+            strong { +"✨ ${data.stargazers_count} " }
+            strong { +"\uD83C\uDF74 ${data.stargazers_count} " }
+            div {   if(query.isFetching) +"Updating..."
+                	else +""
+            } } }	
+```
+
+--
+
+## Результат
+
+![](images/react-query-simple.jpg)
+
+---
+
+## Усложняем запросы
+
+--
+
+### Компонент для списка постов
+
+```Kotlin
+interface PostsProps : Props {
+    var setPostId: StateSetter<Int> }
+private interface QueryData{
+    val data: Array<Data> }
+private interface Data{
+    val body: String
+    val id: Int
+    val title: String
+    val userId: Int }
+private val postsQueryFunction: 
+	QueryFunction<Any, Any> = {
+    	axios<Any>(
+        	jso { 
+				url = "https://jsonplaceholder.typicode.com/posts" 
+		} ) }
+```
+
+--
+
+### Компонент для списка постов
+
+```Kotlin
+fun cPosts() = fc("PostS") { props: PostsProps ->
+    val queryClient = useQueryClient()
+    val query = useQuery<Any, QueryError, QueryData, Any>
+		("posts", postsQueryFunction)
+    div {
+        h1 { +"Posts" }
+        if (query.isLoading) div { +"Loading .." }
+        else if (query.isError) div { +query.error?.message!! }
+        else { ... }
+        div {
+            if(query.isFetching)
+                +"Updating..."
+            else
+                +"" } } }
+```
+
+--
+
+### Компонент для списка постов
+
+```Kotlin
+query.data?.data?.map {post ->
+	p {
+		attrs.key = post.id.toString()
+		styledA("#") {
+			attrs.onClickFunction = { props.setPostId(post.id) }
+			css {
+				queryClient
+					.getQueryData<QueryData>("post, ${post.id}")
+					?.let {
+						fontWeight = FontWeight.bold
+						color = Color.green
+					}
+			}
+			+(post.title)
+		} } }
+```
+
+--
+
+### Компонент для поста
+
+```Kotlin
+interface PostProps : Props {
+    var postId: Int?
+    var setPostId: StateSetter<Int>
+}
+
+interface PostData{
+    val title: String
+    val body: String
+}
+```
+
+--
+
+### Компонент для поста
+
+```Kotlin
+fun cPost() = fc("Post") { props: PostProps ->
+    val id = props.postId
+    val _url = "https://jsonplaceholder.typicode.com/posts/$id"
+    val query = 
+		useQuery<Any, QueryError, AxiosResponse<PostData>, Any>(
+        	"post, $id",
+        	{
+            	axios<PostData>(
+                	jso { url = _url }
+            	)
+        	}
+    	)
+```
+
+--
+
+### Компонент для поста
+
+```Kotlin
+div { div { a {
+		attrs.onClickFunction = { props.setPostId(-1) }
+		attrs.href = "#"
+		+"Back"
+	}
+	if (query.isLoading) div { +"Loading .." }
+	else if (query.isError) div { +(query.error?.message?:"Error!") }
+	else {
+```
+
+--
+
+### Компонент для поста
+
+```Kotlin
+val data = query.data?.data!!
+h1 { +(data.title) }
+div {
+	p { +data.body }
+}
+div {
+	if(query.isFetching)
+		+"Updating..."
+	else
+		+""
+}
+```
+
+--
+
+### Компонент приложения
+
+```Kotlin
+fun cBasic() = fc("Basic"){_: Props ->
+    val (postId, setPostId) = useState(-1)
+    p { +"long text about example" }
+    if(postId>-1)
+        child(cPost()){
+            attrs.postId = postId
+            attrs.setPostId = setPostId
+        }
+    else
+        child(cPosts()){
+            attrs.setPostId = setPostId
+        }
+}
+```
+
+--
+
+## Результат
+
+![](images/react-query-basic.jpg)
+
+---
+
+### Изменение состояния. Серверная часть
+
+--
+
+### build.gradle.kts
+
+```Kotlin
+plugins {
+    application
+    kotlin("jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.5.31"
+    id("com.github.johnrengelman.shadow") version "7.0.0" }
+application {
+	mainClass.set("ru.altmanea.....ApplicationKt") }
+dependencies {
+    implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-serialization:$ktor_version")
+    implementation("io.ktor:ktor-server-netty:$ktor_version")
+    implementation("ch.qos.logback:logback-classic:$logback_version")
+    testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+    testImplementation(
+		"org.jetbrains.kotlin:kotlin-test:$kotlin_version") }
+```
+
+
+
+
+</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
