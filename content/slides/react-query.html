@@ -360,8 +360,147 @@ dependencies {
 		"org.jetbrains.kotlin:kotlin-test:$kotlin_version") }
 ```
 
+--
 
+### Запуск движка сервера
 
+```Kotlin
+fun main() {
+    embeddedServer(Netty, port = 8080, host = "127.0.0.1") {
+        install(CORS){
+            anyHost()
+        }
+        install(ContentNegotiation) {
+            json()
+        }
+        install(DelayEmulator){
+            delay = 1000
+        }
+        autoRefetching()
+    }.start(wait = true)
+}
+```
+
+--
+
+### Маршруты
+
+```Kotlin
+private val list = arrayListOf("Item1", "Item2", "Item3")
+private const val path = "ar"
+fun Application.autoRefetching() {
+    routing {
+        get(path) { call.respond(list) }
+        get("$path/add/{value}") {
+            call.parameters["value"]?.let {
+                list.add(it)
+            }
+            call.respond(list) }
+        get("$path/clear") {
+            list.clear()
+            call.respond(list) }
+    } 
+}
+```
+
+--
+
+### Тестируем сервер
+
+```
+curl http://127.0.0.1:8080/ar
+curl http://127.0.0.1:8080/ar/add/newItem
+curl http://127.0.0.1:8080/ar/clear
+```
+
+---
+
+## Shared TODO list
+
+--
+
+### Данные
+
+```Kotlin
+typealias Todos = Array<String>
+
+fun cAutoRefetching() = fc("AutoRefetching") { _: Props ->
+	val queryClient = useQueryClient()
+	val (intervalMs, setIntervalMs) = useState(1000)
+	val (value, setValue) = useState("")
+```
+
+--
+
+### Запрос с обновлением
+
+```Kotlin
+val query = useQuery<Any, QueryError, AxiosResponse<Todos>, Any>(
+	"todos",
+	{
+		axios<PostData>(
+			jso { url = example_url }
+		)
+	},
+	jso {
+		refetchInterval = intervalMs
+	}
+)
+```
+
+--
+
+### Запросы на изменения
+
+```Kotlin
+val addMutation = useMutation<Any, Any, Any, Any>(
+	{ _value: String ->
+		fetch("$example_url/add/$_value")
+	},
+	options = jso {
+		onSuccess = { _: Any, _: Any, _: Any? ->
+			queryClient.invalidateQueries("todos")
+		} } )
+val clearMutation = useMutation<Any, Any, Any, Any>(
+	{ fetch("$example_url/clear") },
+	options = jso {
+		onSuccess = { _: Any, _: Any, _: Any? ->
+			queryClient.invalidateQueries("todos")
+		} } )
+```
+
+--
+
+### Добавление TODO
+
+```Kotlin
+form {
+	attrs.onSubmit = {
+		it.preventDefault()
+		addMutation.mutate(
+			value,
+			jso {
+				onSuccess = { _: Any, _: Any, _: Any ->
+					Promise { resolve, _ ->
+						setValue(" ")
+						resolve(1)
+					} 
+				}
+			} ) }
+```
+
+--
+
+### Очистка списка
+
+```Kotlin
+button {
+	+"Clear all"
+	attrs.onClickFunction = {
+		clearMutation.mutate(0, null)
+	}
+}
+```
 
 </script>
                 </section>
