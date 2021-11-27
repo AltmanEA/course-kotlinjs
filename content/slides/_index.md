@@ -17,3 +17,4 @@ weight: 10
 8. <a target="_blank" rel="noopener noreferrer" href="state-control.html">Управление состоянием</a>
 9. <a target="_blank" rel="noopener noreferrer" href="react-redux.html">React Redux</a>
 10. <a target="_blank" rel="noopener noreferrer" href="react-test.html">Тестирование приложений React</a>
+11. <a target="_blank" rel="noopener noreferrer" href="react-query.html">React Query</a>
