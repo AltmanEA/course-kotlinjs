@@ -1,0 +1,339 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Web приложение</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+		<link rel="stylesheet" href="plugin/highlight/github.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+                <section data-markdown data-separator="^\n---\n$" data-separator-vertical="^\n--\n$">
+                    <script type="text/template">
+# Мультиплатформенный модуль
+
+[https://github.com/AltmanEA/edu-react-query](https://github.com/AltmanEA/edu-react-query)
+
+--
+
+### Конфигурация
+
+```Kotlin
+plugins {
+    kotlin("multiplatform") version "1.5.31"
+    kotlin("plugin.serialization") version "1.5.31" }
+kotlin {
+    jvm { withJava() }
+    js { browser {
+            binaries.executable()
+        } }
+	sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx
+					:kotlinx-serialization-json:1.3.0")
+            } }
+```
+
+--
+
+### Общий класс
+
+```Kotlin
+
+@Serializable
+class Student(
+    val firstname: String,
+    val surname: String
+){
+    val shortName
+        get() = "${firstname[0]}. $surname"
+    val fullName
+        get() = "$firstname $surname"
+    val idName
+        get() = "$firstname$surname"
+}
+```
+
+--
+
+## Сборка библиотек
+
+```
+Gradle – Build
+```
+
+```
+/build/libs:
+	model-js-0.1.jar
+	model-jvm-0.1.jar
+```
+
+--
+
+## Подключение библиотек (к другим модулям)
+
+
+```Kotlin
+repositories {
+    flatDir {
+        dirs("$projectDir/../model/build/libs")
+    }
+}
+
+dependencies {
+	implementation("ru.altmanea.edu-react-query:model-jvm-0.1")
+}
+```
+
+---
+
+## Сервер
+
+--
+
+### Движок
+
+```Kotlin
+embeddedServer(
+        Netty,
+        port = 8000,
+        host = "127.0.0.1",
+        watchPaths = listOf("classes", "resources")
+    ) {
+        install(ContentNegotiation) {
+            json()
+        }
+        routing {
+            student()
+            lesson()
+        }
+    }.start(wait = true)
+```
+
+--
+
+### CORS
+
+```Kotlin
+install(CORS) {
+	anyHost()
+	method(HttpMethod.Options)
+	method(HttpMethod.Put)
+	method(HttpMethod.Delete)
+	method(HttpMethod.Patch)
+	header(HttpHeaders.Authorization)
+	header(HttpHeaders.AccessControlAllowOrigin)
+	allowNonSimpleContentTypes = true
+	allowCredentials = true
+	allowSameOrigin = true
+}
+```
+
+--
+
+### Данные
+
+```Kotlin
+val studentsList = listOf(
+    Student("Sheldon", "Cooper"),
+    Student("Leonard", "Hofstadter"),
+    Student("Howard", "Wolowitz"),
+    Student("Penny", "Hofstadter"),
+).toMutableList()
+```
+
+--
+
+### API
+
+```Kotlin
+fun Route.student() = route(studentsPath) {
+        get { if (studentsList.isNotEmpty()) {
+                call.respond(studentsList)
+            } else { call.respondText("No students found", 
+					status = HttpStatusCode.NotFound) } }
+		post { val student = call.receive<Student>()
+            studentsList.add(student)
+            call.respondText("Student stored correctly", 
+				status = HttpStatusCode.Created) }
+        delete("{id}") {
+            val id = call.parameters["id"] ?: 
+				return@delete call.respond(HttpStatusCode.BadRequest)
+            if (studentsList.removeIf { it.idName == id }) {
+                call.respondText("Lesson removed correctly", 
+					status = HttpStatusCode.Accepted)
+            } else {
+                call.respondText("Not Found", 
+					status = HttpStatusCode.NotFound)  } }
+```
+
+---
+
+## Клиент
+
+--
+
+### Свойства компонента
+
+```Kotlin
+interface StudentListProps : Props {
+    var students: List<Student>
+    var addStudent: (String, String) -> Unit
+    var deleteStudent: (Int) -> Unit
+}
+```
+
+--
+
+### Список студентов
+
+```Kotlin
+fun fcStudentList() = fc("StudentList") { props: StudentListProps ->
+    h3 { +"Students" }
+    ol {
+        props.students.mapIndexed { index, student ->
+            li {
+                +"${student.fullName} \t"
+                button {
+                    +"X"
+                    attrs.onClickFunction = {
+                        props.deleteStudent(index)
+                    } } } } }
+```
+
+--
+
+### Форма добавления студента
+
+```Kotlin
+val firstnameRef = useRef<INPUT>()
+val surnameRef = useRef<INPUT>()
+p { +"Firstname: "
+	input { ref = firstnameRef } }
+p { +"Surname: " 
+	input { ref = surnameRef } }
+button { +"Add student"
+	attrs.onClickFunction = {
+		firstnameRef.current?.value?.let { firstname ->
+			surnameRef.current?.value?.let { surname ->
+				props.addStudent(firstname, surname)
+			} } } }
+```
+
+--
+
+### Контейнер. Запрос на чтение.
+
+```Kotlin
+typealias QueryData = Array<Student>
+
+fun qcStudentList() = fc("QueryStudentList") { _: Props ->
+	val queryClient = useQueryClient()
+	val query = 
+		useQuery<Any, QueryError, AxiosResponse<QueryData>, Any>(
+			"studentList",
+			{
+				axios<QueryData>(jso {
+					url = serverUrl + studentsPath
+				})
+			}
+		)
+```
+
+--
+
+### Запрос на добавление студентов
+
+```Kotlin
+val addStudentMutation = useMutation<Any, Any, Any, Any>(
+	{ student: Student ->
+		axios<String>(jso {
+			url = serverUrl + studentsPath
+			method = "Post"
+			headers = json(
+				"Content-Type" to "application/json"
+			)
+			data = JSON.stringify(student)
+		}) },
+	options = jso {
+		onSuccess = { _: Any, _: Any, _: Any? ->
+			queryClient.invalidateQueries<Any>("studentList")
+		} } )
+```
+
+--
+
+### Запрос на удаление студентов
+
+```Kotlin
+val deleteStudentMutation = useMutation<Any, Any, Any, Any>(
+	{ student: Student ->
+		axios<String>(jso {
+			url = "$serverUrl$studentsPath/${student.idName}"
+			method = "Delete"
+		})
+	},
+	options = jso {
+		onSuccess = { _: Any, _: Any, _: Any? ->
+			queryClient.invalidateQueries<Any>("studentList")
+		}
+	}
+)
+```
+
+--
+
+### Упаковка компонента в контейнер
+
+```Kotlin
+if (query.isLoading) div { +"Loading .." }
+else if (query.isError) div { +"Error!" }
+else {
+	val data = query.data?.data.unsafeCast<QueryData>()
+	val students = data.map { Student(it.firstname, it.surname) }
+	child(fcStudentList()) {
+		attrs.students = students
+		attrs.addStudent = { f, s ->
+			addStudentMutation.mutate(Student(f, s), null)
+		}
+		attrs.deleteStudent = {
+			deleteStudentMutation.mutate(students[it], null)
+		}
+	}
+}
+```
+
+</script>
+                </section>
+            </div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+
+		<script src="plugin/menu/menu.js"></script>
+		<script src="plugin/audio-slideshow/plugin.js"></script>
+		<script src="plugin/audio-slideshow/recorder.js"></script>
+		<script src="plugin/audio-slideshow/RecordRTC.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMenu, RevealAudioSlideshow, RevealAudioRecorder ],
+				menu: {
+		        	themes: true,
+        			themesPath: 'dist/theme/',
+		        }
+			});
+		</script>
+	</body>
+</html>
